@@ -30,7 +30,12 @@ def get_ilceler(il_id: str) -> dict:
     '''
 
     ilceler = requests.get(
-        "https://dehas-api.csb.gov.tr/api/HasarTespit/GetIleGoreIlceler?id={}".format(il_id)).json()["items"]
+        "https://hasartespit.csb.gov.tr/query/counties?cityId={}".format(il_id))
+        
+    # print(ilceler.json()) # debug
+
+    ilceler = ilceler.json()["items"]
+
     # print(ilceler)  # debug
     return ilceler
 
@@ -41,8 +46,13 @@ def get_mahalleler(ilce_id: str) -> dict:
     '''
 
     mahalleler = requests.get(
-        "https://dehas-api.csb.gov.tr/api/HasarTespit/GetIlceyeGoreMahalleler?id={}".format(ilce_id)).json()["items"]
+        "https://hasartespit.csb.gov.tr/query/districts?countyId={}".format(ilce_id))
+        
+    # print(mahalleler.json()) # debug
+
+    mahalleler = mahalleler.json()["items"]
     # print(mahalleler)  # debug
+
     return mahalleler
 
 
@@ -60,14 +70,13 @@ def get_results(mahalled_id: int, ilce_id: int, il_id: int) -> dict:
     "deprem_tarihi":"2023-02-06T00:00:00","planlanmisYikimSaati":null}],"hasError":false,"message":"İşlem Başarılı."}
     '''
 
-    url = "https://dehas-api.csb.gov.tr/api/HasarTespit/HasarTespitAdresSorgu"
-    # params = {"sokak": "", "binaNo": "", "aramaTip": 2,
-    #           "ilKodu": 21, "ilceKodu": 2040, "mahalleKodu": 19727}
+    # url = "https://dehas-api.csb.gov.tr/api/HasarTespit/HasarTespitAdresSorgu"
+    url = "https://hasartespit.csb.gov.tr/query/AddressQuery?IlId={}&IlceId={}&MahalleId={}".format(il_id, ilce_id, mahalled_id)
 
     try:
-        params = {"sokak": "", "binaNo": "", "aramaTip": 2,
-                  "ilKodu": il_id, "ilceKodu": ilce_id, "mahalleKodu": mahalled_id}
-        resp = requests.post(url, json=params).json()
+        resp = requests.get(url)
+        # print("resp: {}".format(resp.json())) # debug
+        return resp.json()
     except Exception as e:
         print(e)
     return resp
@@ -91,14 +100,11 @@ def get_all():
             mahalleler = get_mahalleler(ilce_id)
             # print("mahalleler: {}".format(mahalleler)) # debug
             for j in range(len(mahalleler)):
-                mah_id = mahalleler[j]['id']
+                mah_id = mahalleler[j]['mahalleId']
                 print("mah_id: {}".format(mah_id))  # debug
-                result = get_results(mah_id, ilce_id, il_id)["liste"]
+                result = get_results(mah_id, ilce_id, il_id)
                 results.extend(result)
-            # break
-        # break
 
-    # TODO dosyaya json olarak yaz
     with open('results.json', 'w') as f:
         f.write(json.dumps(results, indent=4))
 
